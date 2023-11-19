@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Restaurant.DAL;
+using Restaurant.Hubs;
 using Restaurant.IRepository;
 using Restaurant.IRepository.Repository;
 using Restaurant.Mapper;
@@ -43,12 +44,7 @@ namespace Restaurant
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.Password.RequireNonAlphanumeric = false;
-            }).AddEntityFrameworkStores<RestaurantContext>()
-    .AddDefaultTokenProviders()
-    .AddSignInManager<SignInManager<ApplicationUser>>()
-    .AddDefaultTokenProviders()
-    .AddDefaultTokenProviders()
-    .AddTokenProvider<DataProtectorTokenProvider<ApplicationUser>>(TokenOptions.DefaultProvider); ;
+            }).AddEntityFrameworkStores<RestaurantContext>();
 
 
             // Add Auto Mapper
@@ -60,7 +56,10 @@ namespace Restaurant
             // Add this at the end of ConfigureServices method
             builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
+            // Configure SignalR
+            builder.Services.AddSignalR();
 
+            // Add Policy 
             builder.Services.AddCors(corseOptions =>
             {
                 corseOptions.AddPolicy("AppCorse", corsePolicy =>
@@ -95,12 +94,19 @@ namespace Restaurant
 
             app.UseHttpsRedirection();
 
+            // Use policy
+            app.UseCors("AppCorse");
+
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseHttpLogging();
 
 
             app.MapControllers();
+
+
+            // Use signalR
+            app.MapHub<RestaurantHub>("RestaurantHub");
 
             app.Run();
         }

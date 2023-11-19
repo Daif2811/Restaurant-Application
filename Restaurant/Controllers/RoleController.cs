@@ -82,7 +82,9 @@ namespace Restaurant.Controllers
                 IdentityRole oldRole = await _roleManager.FindByNameAsync(name);
                 if (oldRole != null)
                 {
-                    oldRole.Name = newName;
+
+                    oldRole.Name = !string.IsNullOrEmpty(newName)?  newName : oldRole.Name;
+
                     IdentityResult result = await _roleManager.UpdateAsync(oldRole);
                     if (result.Succeeded)
                     {

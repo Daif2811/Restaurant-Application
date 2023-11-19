@@ -137,17 +137,15 @@ namespace Restaurant.Controllers
                     //This line will map the properties from (( model to currentUser )).
                     _mapper.Map(model, currentUser);
 
-                    bool chackPassword = await _userManager.CheckPasswordAsync(currentUser, password);
+                    bool checkPassword = await _userManager.CheckPasswordAsync(currentUser, password);
 
-                    if (chackPassword == false)
+                    if (checkPassword == false)
                     {
                         return BadRequest("Sorry, your password is wrong.");
                     }
 
-
                     // currentUser.PasswordHash = _userManager.PasswordHasher.HashPassword(currentUser, model.Password);
                     IdentityResult passwordChangeResult = await _userManager.ChangePasswordAsync(currentUser, password, model.Password);
-
 
                     IdentityResult result = await _userManager.UpdateAsync(currentUser);
                     if (result.Succeeded)
@@ -161,7 +159,6 @@ namespace Restaurant.Controllers
                     }
 
                 }
-
                 return BadRequest("User not found.");
             }
             catch (Exception ex)

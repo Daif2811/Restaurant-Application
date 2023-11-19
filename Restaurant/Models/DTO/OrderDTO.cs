@@ -12,12 +12,12 @@ namespace Restaurant.Models.DTO
         [Required]
         public string Address { get; set; }
 
-        [Required]
+        [Required, Display(Name = "Phone number")]
         public string PhoneNumber { get; set; }
 
 
 
-        [Required]
+        [Required, Display(Name = "Meal Id")]
         public int MealId { get; set; }
     }
 }

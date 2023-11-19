@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Restaurant.DAL;
@@ -18,11 +20,30 @@ namespace Restaurant.Controllers
     public class OrderController : ControllerBase
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IMapper _mapper;
 
-        public OrderController(IOrderRepository orderRepository)
+        public OrderController(
+            IOrderRepository orderRepository,
+            UserManager<ApplicationUser> userManager,
+            IMapper mapper)
         {
             this._orderRepository = orderRepository;
+            this._userManager = userManager;
+            this._mapper = mapper;
         }
+
+
+        [HttpGet("CurrentUser")]
+        private ApplicationUser CurrentUser()
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            ApplicationUser currentUser = _userManager.FindByIdAsync(userId).Result;
+            return currentUser;
+        }
+
+
+
 
         // GET: api/Order
         [HttpGet("Orders")]
@@ -75,20 +96,11 @@ namespace Restaurant.Controllers
         {
             if (ModelState.IsValid)
             {
-                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return BadRequest("User Id is null");
-                }
-                Order order = new Order()
-                {
-                    OrderDate = DateTime.Now,
-                    UserId = userId,
-                    MealId = orderDto.MealId,
-                    Address = orderDto.Address,
-                    OrderQuantity = orderDto.OrderQuantity,
-                    PhoneNumber = orderDto.PhoneNumber,
-                };
+               
+                Order order = _mapper.Map<Order>(orderDto);
+
+                order.OrderDate = DateTime.Now;
+                order.UserId = CurrentUser().Id;
 
                 await _orderRepository.Add(order);
                 return Ok(order);
@@ -109,11 +121,10 @@ namespace Restaurant.Controllers
 
             try
             {
-                oldOrder.MealId = orderDto.MealId;
-                oldOrder.Address = orderDto.Address;
-                oldOrder.PhoneNumber = orderDto.PhoneNumber;
-                oldOrder.OrderQuantity = orderDto.OrderQuantity;
+                _mapper.Map( oldOrder, orderDto);
+
                 oldOrder.OrderDate = DateTime.Now;
+                oldOrder.UserId = CurrentUser().Id;
 
                 await _orderRepository.Update(oldOrder);
                 return Ok(orderDto);
@@ -124,7 +135,7 @@ namespace Restaurant.Controllers
                 return BadRequest(ex.Message);
             }
 
-           
+
         }
 
         // DELETE: api/Order/5
