@@ -2,7 +2,7 @@
 
 namespace Restaurant.Models.DTO
 {
-    public class RegisterDto
+    public class EditProfileDto
     {
 
         [Required, Display(Name = "User Name"), MaxLength(50, ErrorMessage ="User Name should not be greater than 50 character. ")]

@@ -3,7 +3,7 @@ using System.Xml.Linq;
 
 namespace Restaurant.Models.DTO
 {
-    public class OrderDto
+    public class OrderUpdateDto
     {
 
         [Required, Display(Name = "Quantity"), Range(1, 250, ErrorMessage = "Sorry, Quantity should be between 1 and 250 orders")]

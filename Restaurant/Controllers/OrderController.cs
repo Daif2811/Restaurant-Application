@@ -71,7 +71,7 @@ namespace Restaurant.Controllers
         }
 
         [HttpPost("BuyOrder")]
-        public async Task<IActionResult> BuyOrder(OrderDTO orderDto)
+        public async Task<IActionResult> BuyOrder(OrderDto orderDto)
         {
             if (ModelState.IsValid)
             {
@@ -97,7 +97,7 @@ namespace Restaurant.Controllers
         }
 
         [HttpPut("Edit/{id}")]
-        public async Task<IActionResult> Edit([FromRoute] int id, OrderDTO orderDto)
+        public async Task<IActionResult> Edit([FromRoute] int id, OrderUpdateDto orderDto)
         {
 
             Order oldOrder = _orderRepository.GetById(id);

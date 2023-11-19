@@ -2,7 +2,7 @@
 
 namespace Restaurant.Models.DTO
 {
-    public class CategoryDTO
+    public class CategoryDto
     {
         [Required]
         public string Name { get; set; }
@@ -10,6 +10,9 @@ namespace Restaurant.Models.DTO
 
         [Required]
         public string Description { get; set; }
+
+        [Required]
+        public IFormFile Image { get; set; }
 
     }
 }

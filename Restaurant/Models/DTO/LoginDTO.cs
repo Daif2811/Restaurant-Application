@@ -2,7 +2,7 @@
 
 namespace Restaurant.Models.DTO
 {
-    public class LoginDTO
+    public class LoginDto
     {
 
         [Required, Display(Name ="User Name")]

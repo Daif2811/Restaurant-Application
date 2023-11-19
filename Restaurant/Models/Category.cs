@@ -14,6 +14,8 @@ namespace Restaurant.Models
         [Required]
         public string Description { get; set; }
 
+        [Required]
+        public string Image { get; set; }
 
         public virtual ICollection<Meal> Meals { get; set; }
     }

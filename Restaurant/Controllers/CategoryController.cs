@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Restaurant.IRepository;
 using Restaurant.Models;
 using Restaurant.Models.DTO;
@@ -12,9 +13,12 @@ namespace Restaurant.Controllers
     {
 
         private readonly ICategoryRepository _categoryRepository;
-        public CategoryController(ICategoryRepository categoryRepository)
+        private readonly IMapper _mapper;
+
+        public CategoryController(ICategoryRepository categoryRepository, IMapper mapper)
         {
            _categoryRepository = categoryRepository;
+            this._mapper = mapper;
         }
 
 
@@ -36,28 +40,40 @@ namespace Restaurant.Controllers
             return Ok(category);
         }
 
+
         // POST api/Category
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] CategoryDTO categoryDto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Post([FromForm] CategoryDto categoryDto)
         {
-            Category category = new Category()
-            {
-                Name = categoryDto.Name,
-                Description = categoryDto.Description,
-            };
+            string image = await ProcessImageUpload(categoryDto.Image);
+            
+            Category category = _mapper.Map<Category>(categoryDto);
+            category.Image = image;
+
+
+
 
             await _categoryRepository.Add(category);
             return Ok(category);
         }
 
+
+
         // PUT api/Category/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put([FromRoute] int id,[FromBody] CategoryDTO categoryDto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Put([FromRoute] int id,[FromForm] CategoryUpdateDto categoryDto)
         {
            Category oldCategory =  await _categoryRepository.GetById(id);
-            oldCategory.Description = categoryDto.Description;
-            oldCategory.Name = categoryDto.Name;
 
+            //_mapper.Map<Category>(categoryDto);
+            string image = await ProcessImageUpload(categoryDto.Image);
+
+
+            oldCategory.Description =!string.IsNullOrEmpty(categoryDto.Description)? categoryDto.Description : oldCategory.Description ;
+            oldCategory.Name = !string.IsNullOrEmpty(categoryDto.Name)? categoryDto.Name : oldCategory.Name;
+            oldCategory.Image =!string.IsNullOrEmpty(image)? image : oldCategory.Image; 
 
             await _categoryRepository.Update(oldCategory);
             return Ok(oldCategory);
@@ -70,5 +86,30 @@ namespace Restaurant.Controllers
             await _categoryRepository.Delete(id);
             return Ok();
         }
+
+
+
+        [HttpGet("UplaodImage")]
+        public async Task<string> ProcessImageUpload(IFormFile imageFile)
+        {
+            if (imageFile == null || imageFile.Length == 0)
+            {
+                return null;
+            }
+            else
+            {
+                var fileName = Guid.NewGuid().ToString() + "_" + imageFile.FileName;
+                //var fileName = Path.GetFileName(imageFile.FileName);
+                var filePath = Path.Combine("wwwroot/Meal_Images", fileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(fileStream);
+                }
+                return fileName;
+            }
+        }
+
+
+
     }
 }

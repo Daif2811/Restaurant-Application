@@ -19,6 +19,10 @@ namespace Restaurant.Models
 
         public int CategoryId { get; set; }
 
+        [Required]
+        public string Image { get; set; }
+
+
 
         public virtual Category Category { get; set; }
         public virtual ICollection<Order> Orders { get; set; }

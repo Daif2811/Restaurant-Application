@@ -5,7 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Restaurant.DAL;
 using Restaurant.IRepository;
 using Restaurant.IRepository.Repository;
+using Restaurant.Mapper;
 using Restaurant.Models;
+using System.Configuration;
 //using Microsoft.Identity.Web;
 //using Microsoft.Identity.Web.Resource;
 
@@ -27,7 +29,7 @@ namespace Restaurant
             // Add swagger
             builder.Services.AddSwaggerGen();
 
-
+            //builder.Services.AddLogging();
 
             // Add Database
             var connectionString = builder.Configuration.GetConnectionString("RestaurantConnection");
@@ -41,8 +43,22 @@ namespace Restaurant
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.Password.RequireNonAlphanumeric = false;
-            }).AddEntityFrameworkStores<RestaurantContext>();
+            }).AddEntityFrameworkStores<RestaurantContext>()
+    .AddDefaultTokenProviders()
+    .AddSignInManager<SignInManager<ApplicationUser>>()
+    .AddDefaultTokenProviders()
+    .AddDefaultTokenProviders()
+    .AddTokenProvider<DataProtectorTokenProvider<ApplicationUser>>(TokenOptions.DefaultProvider); ;
 
+
+            // Add Auto Mapper
+            builder.Services.AddAutoMapper(typeof(RestaurantMapper));
+
+            // Add Email SMTP
+            builder.Services.AddTransient<IEmailSender, EmailSender>();
+
+            // Add this at the end of ConfigureServices method
+            builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 
             builder.Services.AddCors(corseOptions =>
@@ -50,7 +66,7 @@ namespace Restaurant
                 corseOptions.AddPolicy("AppCorse", corsePolicy =>
                 {
                     corsePolicy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-                 // corsePolicy.WithOrigins("www.google.com", "www.facebook.com").WithMethods("Get");
+                    // corsePolicy.WithOrigins("www.google.com", "www.facebook.com").WithMethods("Get");
                 });
             });
 
@@ -81,6 +97,7 @@ namespace Restaurant
 
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseHttpLogging();
 
 
             app.MapControllers();

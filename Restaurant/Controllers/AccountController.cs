@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Restaurant.IRepository;
 using Restaurant.Models;
 using Restaurant.Models.DTO;
 
@@ -12,11 +14,22 @@ namespace Restaurant.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IMapper _mapper;
+        private readonly IEmailSender _emailSender;
 
-        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+        public AccountController(
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
+            RoleManager<IdentityRole> roleManager,
+            IMapper mapper,
+            IEmailSender emailSender)
         {
             this._userManager = userManager;
             this._signInManager = signInManager;
+            this._roleManager = roleManager;
+            this._mapper = mapper;
+            this._emailSender = emailSender;
         }
 
 
@@ -38,50 +51,60 @@ namespace Restaurant.Controllers
 
 
         [HttpPost("Register")]
-        public async Task<IActionResult> Register(RegisterDTO model)
+        public async Task<IActionResult> Register(RegisterDto model)
         {
             try
             {
-                if (ModelState.IsValid)
+                if (!ModelState.IsValid)
                 {
-                    ApplicationUser user = new ApplicationUser()
-                    {
-                        UserName = model.UserName,
-                        Email = model.Email,
-                        FirstName = model.FirstName,
-                        LastName = model.LastName,
-                        PhoneNumber = model.PhoneNumber,
-                        Address = model.Address,
-                    };
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                    return BadRequest(errors);
+                }
 
-                    IdentityResult result = await _userManager.CreateAsync(user, model.Password);
-                    if (result.Succeeded)
-                    {
-                        await _signInManager.SignInAsync(user, isPersistent: false);
 
-                        IdentityResult addToRole = await _userManager.AddToRoleAsync(user, "Users");
-                        if (addToRole.Succeeded)
+                ApplicationUser existingUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUser != null)
+                {
+                    return BadRequest("User with this email already exists.");
+                }
+
+
+                ApplicationUser user = _mapper.Map<ApplicationUser>(model);
+
+                IdentityResult result = await _userManager.CreateAsync(user, model.Password);
+                if (result.Succeeded)
+                {
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+
+
+                    if (!await _roleManager.RoleExistsAsync("Users"))
+                    {
+                        // Role doesn't exist, create it
+                        var roleResult = await _roleManager.CreateAsync(new IdentityRole("Users"));
+
+                        if (!roleResult.Succeeded)
                         {
-                            return Ok(user);
+                            var roleErrors = roleResult.Errors.Select(error => error.Description).ToList();
+                            return BadRequest(roleErrors);
                         }
-                        else
-                        {
-                            foreach (var error in addToRole.Errors)
-                            {
-                                return BadRequest(error.Description);
-                            }
-                        }
+                    }
+
+                    IdentityResult addToRole = await _userManager.AddToRoleAsync(user, "Users");
+                    if (addToRole.Succeeded)
+                    {
+                        return Ok(user);
                     }
                     else
                     {
-                        foreach (var error in result.Errors)
-                        {
-                            return BadRequest(error.Description);
-                        }
+                        var errors = addToRole.Errors.Select(error => error.Description).ToList();
+                        return BadRequest(errors);
                     }
                 }
-
-                return BadRequest(model);
+                else
+                {
+                    var errors = result.Errors.Select(error => error.Description).ToList();
+                    return BadRequest(errors);
+                }
             }
             catch (Exception ex)
             {
@@ -90,8 +113,11 @@ namespace Restaurant.Controllers
         }
 
 
+
+
+
         [HttpPost("EditProfile/{userName}")]
-        public async Task<IActionResult> EditProfile([FromRoute] string userName, string password, RegisterDTO model)
+        public async Task<IActionResult> EditProfile([FromRoute] string userName, string password, EditProfileDto model)
         {
             try
             {
@@ -103,42 +129,40 @@ namespace Restaurant.Controllers
                 {
                     return BadRequest("Sorry, Enter your password to Edit your profile.");
                 }
+
                 ApplicationUser currentUser = await _userManager.FindByNameAsync(userName);
+
                 if (currentUser != null)
                 {
+                    //This line will map the properties from (( model to currentUser )).
+                    _mapper.Map(model, currentUser);
+
                     bool chackPassword = await _userManager.CheckPasswordAsync(currentUser, password);
+
                     if (chackPassword == false)
                     {
                         return BadRequest("Sorry, your password is wrong.");
                     }
+
+
+                    // currentUser.PasswordHash = _userManager.PasswordHasher.HashPassword(currentUser, model.Password);
+                    IdentityResult passwordChangeResult = await _userManager.ChangePasswordAsync(currentUser, password, model.Password);
+
+
+                    IdentityResult result = await _userManager.UpdateAsync(currentUser);
+                    if (result.Succeeded)
+                    {
+                        return Ok(currentUser);
+                    }
                     else
                     {
-
-                        currentUser.UserName = model.UserName;
-                        currentUser.Email = model.Email;
-                        currentUser.FirstName = model.FirstName;
-                        currentUser.LastName = model.LastName;
-                        currentUser.PhoneNumber = model.PhoneNumber;
-                        currentUser.Address = model.Address;
-                        currentUser.PasswordHash = _userManager.PasswordHasher.HashPassword(currentUser, model.Password);
-
-
-                        IdentityResult result = await _userManager.UpdateAsync(currentUser);
-                        if (result.Succeeded)
-                        {
-                            return Ok(currentUser);
-                        }
-                        else
-                        {
-                            foreach (var error in result.Errors)
-                            {
-                                return BadRequest(error.Description);
-                            }
-                        }
+                        var errors = result.Errors.Select(error => error.Description).ToList();
+                        return BadRequest(errors);
                     }
+
                 }
 
-                return BadRequest(model);
+                return BadRequest("User not found.");
             }
             catch (Exception ex)
             {
@@ -150,49 +174,60 @@ namespace Restaurant.Controllers
 
 
 
-        [HttpPost("AddNewAdmin"), Authorize(Roles ="Admin")]
-        public async Task<IActionResult> AddNewAdmin(RegisterDTO model)
+        [HttpPost("AddNewAdmin"), Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AddNewAdmin(RegisterDto model)
         {
             try
             {
-                if (ModelState.IsValid)
+                if (!ModelState.IsValid)
                 {
-                    ApplicationUser user = new ApplicationUser()
-                    {
-                        UserName = model.UserName,
-                        Email = model.Email,
-                        FirstName = model.FirstName,
-                        LastName = model.LastName,
-                        PhoneNumber = model.PhoneNumber,
-                        Address = model.Address,
-                    };
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                    return BadRequest(errors);
+                }
 
-                    IdentityResult result = await _userManager.CreateAsync(user, model.Password);
-                    if (result.Succeeded)
+
+                ApplicationUser existingUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUser != null)
+                {
+                    return BadRequest("User with this email already exists.");
+                }
+
+
+                ApplicationUser user = _mapper.Map<ApplicationUser>(model);
+
+                IdentityResult result = await _userManager.CreateAsync(user, model.Password);
+                if (result.Succeeded)
+                {
+                    //await _signInManager.SignInAsync(user, isPersistent: false);
+
+                    if (!await _roleManager.RoleExistsAsync("Admin"))
                     {
-                        IdentityResult addToRole = await _userManager.AddToRoleAsync(user, "Admin");
-                        if (addToRole.Succeeded)
+                        // Role doesn't exist, create it
+                        var roleResult = await _roleManager.CreateAsync(new IdentityRole("Admin"));
+
+                        if (!roleResult.Succeeded)
                         {
-                            return Ok(user);
+                            var roleErrors = roleResult.Errors.Select(error => error.Description).ToList();
+                            return BadRequest(roleErrors);
                         }
-                        else
-                        {
-                            foreach (var error in addToRole.Errors)
-                            {
-                                return BadRequest(error.Description);
-                            }
-                        }
+                    }
+
+                    IdentityResult addToRole = await _userManager.AddToRoleAsync(user, "Admin");
+                    if (addToRole.Succeeded)
+                    {
+                        return Ok(user);
                     }
                     else
                     {
-                        foreach (var error in result.Errors)
-                        {
-                            return BadRequest(error.Description);
-                        }
+                        var errors = addToRole.Errors.Select(error => error.Description).ToList();
+                        return BadRequest(errors);
                     }
                 }
-
-                return BadRequest(model);
+                else
+                {
+                    var errors = result.Errors.Select(error => error.Description).ToList();
+                    return BadRequest(errors);
+                }
             }
             catch (Exception ex)
             {
@@ -205,7 +240,7 @@ namespace Restaurant.Controllers
 
 
         [HttpPost("Login")]
-        public async Task<IActionResult> Login(LoginDTO model)
+        public async Task<IActionResult> Login(LoginDto model)
         {
             try
             {
@@ -238,7 +273,7 @@ namespace Restaurant.Controllers
 
 
         [HttpPost("LoginWithPhoneOrEmail")]
-        public async Task<IActionResult> LoginWithPhoneOrEmail(LoginDTO model)
+        public async Task<IActionResult> LoginWithPhoneOrEmail(LoginDto model)
         {
             try
             {
