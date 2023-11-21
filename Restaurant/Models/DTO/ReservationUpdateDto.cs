@@ -6,7 +6,7 @@ namespace Restaurant.Models.DTO
     public class ReservationUpdateDto
     {
         [Display(Name = "Number of Persons"), Range(1, 250, ErrorMessage = "Sorry, Persons should be between 1 and 250 Persons")]
-        public byte PersonsNumber { get; set; }
+        public byte? PersonsNumber { get; set; }
 
 
 
@@ -16,6 +16,9 @@ namespace Restaurant.Models.DTO
 
 
         [Display(Name = "Table Id")]
-        public int TableId { get; set; }
+        public int? TableId { get; set; }
+
+        [ DataType(DataType.DateTime)]
+        public DateTime? ReserveDate { get; set; }
     }
 }

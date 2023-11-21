@@ -1,4 +1,5 @@
-﻿using Restaurant.DAL;
+﻿using Microsoft.EntityFrameworkCore;
+using Restaurant.DAL;
 using Restaurant.Models;
 
 namespace Restaurant.IRepository.Repository
@@ -12,24 +13,24 @@ namespace Restaurant.IRepository.Repository
             this._context = context;
         }
 
-        public ICollection<Order> GetAll()
+        public async Task<ICollection<Order>> GetAll()
         {
-            return _context.Orders.ToList();
+            return await _context.Orders.ToListAsync();
         }
 
-        public Order GetById(int id)
+        public async Task<Order> GetById(int id)
         {
-            return _context.Orders.Where(o => o.Id == id).FirstOrDefault();
+            return await _context.Orders.Where(o => o.Id == id).FirstOrDefaultAsync();
         }
 
-        public ICollection<Order> GetByMealId(int mealId)
+        public async Task<ICollection<Order>> GetByMealId(int mealId)
         {
-            return _context.Orders.Where(o => o.MealId == mealId).ToList();
+            return await _context.Orders.Where(o => o.MealId == mealId).ToListAsync();
         }
 
-        public ICollection<Order> GetByUserId(string userId)
+        public async Task<ICollection<Order>> GetByUserId(string userId)
         {
-            return _context.Orders.Where(o => o.UserId == userId).ToList();
+            return await _context.Orders.Where(o => o.UserId == userId).ToListAsync();
         }
 
         public async Task Add(Order order)
@@ -45,7 +46,7 @@ namespace Restaurant.IRepository.Repository
         }
         public async Task Delete(int id)
         {
-            Order order = GetById(id);
+            Order order = await GetById(id);
             _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
         }

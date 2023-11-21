@@ -16,5 +16,9 @@ namespace Restaurant.Models.DTO
 
         [Required, Display(Name = "Table Id")]
         public int TableId { get; set; }
+
+        [Required, DataType(DataType.DateTime)]
+        public DateTime ReserveDate { get; set; }
     }
+
 }

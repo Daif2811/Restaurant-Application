@@ -51,10 +51,10 @@ namespace Restaurant
             builder.Services.AddAutoMapper(typeof(RestaurantMapper));
 
             // Add Email SMTP
-            builder.Services.AddTransient<IEmailSender, EmailSender>();
+           // builder.Services.AddTransient<IEmailSender, EmailSender>();
 
             // Add this at the end of ConfigureServices method
-            builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+            //builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
             // Configure SignalR
             builder.Services.AddSignalR();
@@ -74,6 +74,9 @@ namespace Restaurant
             builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped<IMealRepository, MealRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            builder.Services.AddScoped<ITableRepository, TableRepository>();
+            builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+
 
 
 
@@ -88,7 +91,7 @@ namespace Restaurant
             }
 
 
-            //app.UseStaticFiles();
+            app.UseStaticFiles();
             //app.UseCors("AppCorse");
 
 

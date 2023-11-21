@@ -20,6 +20,12 @@ namespace Restaurant.Mapper
             CreateMap<ApplicationUser, RegisterDto>().ReverseMap();
             CreateMap<ApplicationUser, EditProfileDto>().ReverseMap();
 
+            CreateMap<Table, TableDto>().ReverseMap();
+            CreateMap<Table, TableUpdateDto>().ReverseMap();    
+
+            CreateMap<Reservation, ReservationDto>().ReverseMap();
+            CreateMap<Reservation, ReservationUpdateDto>().ReverseMap();
+
         }
     }
 }

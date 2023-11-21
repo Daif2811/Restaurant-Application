@@ -16,20 +16,19 @@ namespace Restaurant.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IMapper _mapper;
-        private readonly IEmailSender _emailSender;
+        
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             RoleManager<IdentityRole> roleManager,
-            IMapper mapper,
-            IEmailSender emailSender)
+            IMapper mapper)
+           
         {
             this._userManager = userManager;
             this._signInManager = signInManager;
             this._roleManager = roleManager;
             this._mapper = mapper;
-            this._emailSender = emailSender;
         }
 
 

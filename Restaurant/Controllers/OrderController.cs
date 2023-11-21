@@ -47,17 +47,17 @@ namespace Restaurant.Controllers
 
         // GET: api/Order
         [HttpGet("Orders")]
-        public IActionResult Orders()
+        public async Task<IActionResult> Orders()
         {
-            var orders = _orderRepository.GetAll();
+            var orders = await _orderRepository.GetAll();
             return Ok(orders);
         }
 
         // GET: api/Order/5
         [HttpGet("Details/{id}")]
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            var order = _orderRepository.GetById(id);
+            var order = await _orderRepository.GetById(id);
 
             if (order == null)
             {
@@ -67,9 +67,9 @@ namespace Restaurant.Controllers
             return Ok(order);
         }
         [HttpGet("OrdersForUser")]
-        public IActionResult OrdersForUser(string userId)
+        public async Task<IActionResult> OrdersForUser(string userId)
         {
-            var order = _orderRepository.GetByUserId(userId);
+            var order = await _orderRepository.GetByUserId(userId);
 
             if (order == null)
             {
@@ -79,9 +79,9 @@ namespace Restaurant.Controllers
             return Ok(order);
         }
         [HttpGet("OdersForMeal/{mealId:int}")]
-        public IActionResult OdersForMeal(int mealId)
+        public async Task<IActionResult> OdersForMeal(int mealId)
         {
-            var order = _orderRepository.GetByMealId(mealId);
+            var order = await _orderRepository.GetByMealId(mealId);
 
             if (order == null)
             {
@@ -112,7 +112,7 @@ namespace Restaurant.Controllers
         public async Task<IActionResult> Edit([FromRoute] int id, OrderUpdateDto orderDto)
         {
 
-            Order oldOrder = _orderRepository.GetById(id);
+            Order oldOrder = await _orderRepository.GetById(id);
 
             if (oldOrder == null)
             {
